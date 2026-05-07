@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>Social Engineering Audit Tool</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="logo">🛡️ Audit AI</div>
+
+        <nav>
+            <a class="active">📊 Жүйеге шолу</a>
+            <a>🔐 Microsoft 365</a>
+            <a>📋 Surveys</a>
+            <a>📁 Corporate Docs</a>
+            <a>🧠 Audit Insights</a>
+            <a>📡 Live Monitor</a>
+            <a>⚙️ Баптаулар</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="robot">🤖</div>
+            <p>Social Engineering<br>Audit Tool</p>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <header class="topbar">
+            <div>
+                <h1>Киберқауіпсіздік аудит панелі</h1>
+                <p>Пайдаланушылардың күмәнді сілтемелерге реакциясын талдау</p>
+            </div>
+
+            <div class="actions">
+                <button type="button">Export PDF</button>
+                <button type="button" onclick="window.location.href='/export/excel'">
+    Export Excel
+</button>
+                <span class="live">LIVE</span>
+            </div>
+        </header>
+
+        <section class="cards">
+
+            <div class="card glow-blue">
+                <span>Total Visits</span>
+                <h2 id="visits">0</h2>
+                <p>Барлық сценарий бойынша кіру саны</p>
+            </div>
+
+            <div class="card glow-green">
+                <span>Click Actions</span>
+                <h2 id="clicks">0</h2>
+                <p>Батырма басу әрекеттері</p>
+            </div>
+
+            <div class="card glow-purple">
+                <span>Login Attempts</span>
+                <h2 id="logins">0</h2>
+                <p>Енгізу фактісі ғана тіркеледі</p>
+            </div>
+
+            <div class="card glow-red">
+                <span>Қауіп деңгейі</span>
+                <h2 id="risk">Low</h2>
+                <p>Success Rate негізінде есептеледі</p>
+            </div>
+
+        </section>
+
+        <section class="grid">
+
+            <div class="panel large">
+                <div class="panel-head">
+                    <h3>Сценарийлер бойынша Click Rate</h3>
+                    <span>Chart.js</span>
+                </div>
+                <canvas id="clickChart"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Құрылғылар</h3>
+                    <span>Device Pie</span>
+                </div>
+                <canvas id="deviceChart"></canvas>
+            </div>
+
+            <div class="panel large">
+                <div class="panel-head">
+                    <h3>Орташа уақыт талдауы</h3>
+                    <span>Avg Time</span>
+                </div>
+                <canvas id="timeChart"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Геолокация</h3>
+                    <span>Demo</span>
+                </div>
+
+                <div class="map-box">
+                    <div class="dot dot1"></div>
+                    <div class="dot dot2"></div>
+                    <div class="dot dot3"></div>
+                    <p>Almaty · Kazakhstan</p>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <h3>Сценарийлер салыстыруы</h3>
+                <span>Microsoft 365 / Surveys / Corporate Docs</span>
+            </div>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Сценарий</th>
+                    <th>Кіру</th>
+                    <th>Click</th>
+                    <th>Login Attempt</th>
+                    <th>Click Rate</th>
+                    <th>Success Rate</th>
+                    <th>Avg Time</th>
+                </tr>
+                </thead>
+
+                <tbody id="table"></tbody>
+            </table>
+        </section>
+
+        <section class="bottom-grid">
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Audit Insights</h3>
+                    <span>AI Reports</span>
+                </div>
+
+                <div class="insight danger">
+                    <b>Қауіп:</b> Егер Success Rate жоғары болса, қызметкерлер фишингтік формаларға сенуі мүмкін.
+                </div>
+
+                <div class="insight warning">
+                    <b>Ұсыныс:</b> Қызметкерлерге күмәнді сілтемелерді анықтау бойынша оқыту жүргізу қажет.
+                </div>
+
+                <div class="insight success">
+                    <b>Қорғаныс:</b> Email filtering, MFA және домендік тексеру механизмдерін күшейту ұсынылады.
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Live Log Stream</h3>
+                    <span>Auto refresh</span>
+                </div>
+
+                <div class="log-stream" id="logs">
+                    <div>[system] Live monitoring started...</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+</div>
+
+<script>
+let clickChart = null;
+let timeChart = null;
+let deviceChart = null;
+
+function safeNumber(value) {
+    return Number(value || 0);
+}
+
+function destroyCharts() {
+    if (clickChart) {
+        clickChart.destroy();
+        clickChart = null;
+    }
+
+    if (timeChart) {
+        timeChart.destroy();
+        timeChart = null;
+    }
+
+    if (deviceChart) {
+        deviceChart.destroy();
+        deviceChart = null;
+    }
+}
+
+function setRiskLevel(data) {
+function loadLogs() {
+
+    fetch("/admin/logs", { cache: "no-store" })
+
+        .then(response => response.json())
+
+        .then(logs => {
+
+            const logBox = document.getElementById("logs");
+
+            logBox.innerHTML = "";
+
+            logs.reverse().forEach(log => {
+
+                let color = "#94a3b8";
+
+                if (log.event === "click") {
+                    color = "#facc15";
+                }
+
+                if (log.event === "login_attempt") {
+                    color = "#ef4444";
+                }
+
+                if (log.event === "visit") {
+                    color = "#22c55e";
+                }
+
+                logBox.innerHTML += `
+                    <div style="
+                        padding:10px;
+                        margin-bottom:8px;
+                        border-radius:10px;
+                        background:#0f172a;
+                        border-left:4px solid ${color};
+                        font-size:13px;
+                        color:#cbd5e1;
+                    ">
+
+                        <b>${log.site}</b>
+                        | ${log.event}
+                        | ${log.device}
+                        | ${log.browser}
+                        | ${log.time_spent}s
+                        <br>
+
+                        <span style="color:#64748b;">
+                            ${log.time}
+                            | ${log.ip}
+                        </span>
+                    </div>
+                `;
+            });
+        })
+
+        .catch(error => {
+            console.error("Log stream error:", error);
+        });
+}
+    const visits = safeNumber(data.stats.visits);
+    const logins = safeNumber(data.stats.logins);
+    const clicks = safeNumber(data.stats.clicks);
+
+    const successRate = visits > 0 ? (logins / visits) * 100 : 0;
+    const clickRate = visits > 0 ? (clicks / visits) * 100 : 0;
+
+    let risk = "Low";
+
+    if (successRate >= 50 || clickRate >= 70) {
+        risk = "High";
+    } else if (successRate >= 20 || clickRate >= 40) {
+        risk = "Medium";
+    }
+
+    document.getElementById("risk").innerText = risk;
+}
+
+function loadDashboard() {
+    fetch("/admin/data", { cache: "no-store" })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Admin data error: " + response.status);
+            }
+
+            return response.json();
+        })
+        .then(data => {
+            console.log("ADMIN DATA:", data);
+
+            document.getElementById("visits").innerText = safeNumber(data.stats.visits);
+            document.getElementById("clicks").innerText = safeNumber(data.stats.clicks);
+            document.getElementById("logins").innerText = safeNumber(data.stats.logins);
+
+            setRiskLevel(data);
+
+            const labels = [];
+            const clickRates = [];
+            const avgTimes = [];
+
+            const table = document.getElementById("table");
+            table.innerHTML = "";
+
+            for (const site in data.scenarios) {
+                const row = data.scenarios[site];
+
+                labels.push(site || "unknown");
+                clickRates.push(safeNumber(row.click_rate));
+                avgTimes.push(safeNumber(row.avg_time));
+
+                table.innerHTML += `
+                    <tr>
+                        <td>${site || "unknown"}</td>
+                        <td>${safeNumber(row.visits)}</td>
+                        <td>${safeNumber(row.clicks)}</td>
+                        <td>${safeNumber(row.logins)}</td>
+                        <td>${safeNumber(row.click_rate)}%</td>
+                        <td>${safeNumber(row.success_rate)}%</td>
+                        <td>${safeNumber(row.avg_time)}s</td>
+                    </tr>
+                `;
+            }
+
+            destroyCharts();
+
+            clickChart = new Chart(document.getElementById("clickChart"), {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Click Rate %",
+                        data: clickRates,
+                        backgroundColor: "rgba(96, 165, 250, 0.75)",
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#cbd5e1"
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#94a3b8"
+                            },
+                            grid: {
+                                color: "#1e293b"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: "#94a3b8"
+                            },
+                            grid: {
+                                color: "#1e293b"
+                            }
+                        }
+                    }
+                }
+            });
+
+            timeChart = new Chart(document.getElementById("timeChart"), {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Avg Time сек",
+                        data: avgTimes,
+                        borderColor: "rgba(34, 211, 238, 0.9)",
+                        backgroundColor: "rgba(34, 211, 238, 0.15)",
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#cbd5e1"
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#94a3b8"
+                            },
+                            grid: {
+                                color: "#1e293b"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: "#94a3b8"
+                            },
+                            grid: {
+                                color: "#1e293b"
+                            }
+                        }
+                    }
+                }
+            });
+
+            const deviceLabels = Object.keys(data.devices || {});
+            const deviceValues = Object.values(data.devices || {});
+
+            deviceChart = new Chart(document.getElementById("deviceChart"), {
+                type: "doughnut",
+                data: {
+                    labels: deviceLabels,
+                    datasets: [{
+                        data: deviceValues,
+                        backgroundColor: [
+                            "rgba(59,130,246,0.8)",
+                            "rgba(34,197,94,0.8)",
+                            "rgba(239,68,68,0.8)",
+                            "rgba(168,85,247,0.8)",
+                            "rgba(245,158,11,0.8)"
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#cbd5e1"
+                            }
+                        }
+                    }
+                }
+            });
+
+            loadLogs();
+        })
+        .catch(error => {
+            console.error("Dashboard error:", error);
+
+            const logBox = document.getElementById("logs");
+            logBox.innerHTML = `
+                <div>[error] Dashboard data жүктелмеді. Console тексеріңіз.</div>
+            `;
+        });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadDashboard();
+    setInterval(() => {
+    loadDashboard();
+    loadLogs();
+}, 5000);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body class="login-body">
+
+<div class="login-box">
+    <h1>🛡️ Audit Admin</h1>
+    <p>Админ панельге кіру</p>
+
+    {% if error %}
+        <div class="login-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+        <input type="text" name="username" placeholder="Логин" required>
+        <input type="password" name="password" placeholder="Пароль" required>
+        <button type="submit">Кіру</button>
+    </form>
+</div>
+
+</body>
+</html>

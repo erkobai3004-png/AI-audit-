@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Автомат тізімі</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+      overflow: hidden;
+    }
+
+    .header {
+      text-align: center;
+      padding: 1.75rem 2rem;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .header h1 {
+      font-size: 19px;
+      font-weight: 500;
+      color: #111;
+      margin-bottom: 0.25rem;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e5e5e5;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 0.5rem 0.9rem;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .stat span { font-weight: 500; color: #111; }
+    .stat .green { color: #3B6D11; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead tr { background: #f8f8f8; }
+
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 500;
+      color: #888;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    td {
+      padding: 10px 14px;
+      color: #111;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .badge {
+      background: #EAF3DE;
+      color: #3B6D11;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    .footer {
+      padding: 1.25rem 1.5rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 11px 0;
+      background: #111;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.85; }
+  </style>
+</head>
+
+<body data-site="avtomaty">
+
+<div class="container">
+  <div class="header">
+    <h1>Автомат алған студенттер тізімі</h1>
+    <p>Пән: Ғылыми зерттеудің негіздері және академиялық жазу</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">Жалпы саны: <span>36</span></div>
+    <div class="stat">Мәртебе: <span class="green">Расталған</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 44px;">№</th>
+        <th>ФИО студента</th>
+        <th style="width: 140px;">Тобы</th>
+        <th style="width: 90px; text-align: center;">Мәртебе</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="footer">
+    <button onclick="refresh()">Автоматтар тізімін жаңарту</button>
+  </div>
+</div>
+
+<script>
+  const students = [
+    ["Сегизбаев Нуржан Эльнарович", "СИБк-21-3а"],
+    ["Сейтметов Данил Дильшатович", "СИБк-21-3а"],
+    ["Байбеков Абылай Серікұлы", "СИБк-21-3а"],
+    ["Құрманәлі Мақсат Бекмұратұлы", "СИБк-21-2б"],
+    ["Ермухамед Нұрсұлтан Абдумажитұлы", "СИБк-21-2а"],
+    ["Абитов Ерлан Өмірбекұлы", "СИБк-21-2а"],
+    ["Синишин Дмитрий Алексеевич", "СИБк-21-4"],
+    ["Шарлин Алихан Ренатұлы", "СИБк-21-4"],
+    ["Сұлтанаев Арман Ахметқалиұлы", "СИБк-21-4"],
+    ["Дюсембаева Ақерке Кенжебекқызы", "СИБк к-21-2"],
+    ["Тарғын Перизат Сәкенқызы", "СИБк к-21-2б"],
+    ["Қайрат Нұрсұлтан Қайратұлы", "СИБк к-21-3а"],
+    ["Ержанұлы Еркебұлан", "СИБк-21-2"],
+    ["Көпбосын Диас Арманұлы", "СИБк-21-2Б"],
+    ["Сембек Жандос Мақсатұлы", "СИБк к-21-3б"],
+    ["Тұрғанбеков Ернұр Ердәулетұлы", "СИБк-21-3б"],
+    ["Қозымет Жаннат Қанатқызы", "СИБк-21-3а"],
+    ["Ермек Ақтөре Серікұлы", "СИБк-21-7а"],
+    ["Гельманов Камиль Шамильевич", "СИБк-21-2а"],
+    ["Абибулла Мұхамеджан Қанатбекұлы", "СИБк-21-6а"],
+    ["Инкарбек Айжамал Алтынбекқызы", "СИБк-21-2"],
+    ["Тян Кристина Владимировна", "СИБк-21-4"],
+    ["Төлбай Нұрдаулет Болысбекұлы", "СИБк-21-5"],
+    ["Сериккалиев Нұрасыл Жарылғапұлы", "СИБк-21-3а"],
+    ["Хуанбай Даргерхан", "СИБ 21-9б"],
+    ["Амандос Айдос Айқынұлы", "СИБк-21-7а"],
+    ["Алдажан Қайырбек", "СИБк-21-8а"],
+    ["Турсынбеков Санжар Нұртайұлы", "СИБк-21-8а"],
+    ["Шатанов Нұрболат Жансерикұлы", "СИБк-21-5"],
+    ["Тлеухан Темірлан Айдарұлы", "СИБк-21-5"],
+    ["Жаныс Әбілмансұр Бердибекұлы", "Сибк-21-5"],
+    ["Бактыбаев Дамир Ясирұлы", "Сибк-21-5"],
+    ["Турсынмохаметұлы Муслим", "Сибк 21-5"],
+    ["Серғазы Нұрайлым Жанғалиқызы", "Сибк 21-5"],
+    ["Батыр Думан Жасұланұлы", "СИБк21-4а"],
+    ["Нұрболов Марат Нұрболұлы", "СИБк-21-4б"]
+  ];
+
+  function render() {
+    document.getElementById('tbody').innerHTML = students.map((s, i) => `
+      <tr>
+        <td style="color: #aaa;">${i + 1}</td>
+        <td>${s[0]}</td>
+        <td style="color: #888;">${s[1]}</td>
+        <td style="text-align: center;"><span class="badge">Автомат</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function refresh() {
+    clickButton('avtomaty_refresh_clicked');
+
+    const btn = document.querySelector('button');
+    btn.textContent = 'Жаңартылуда...';
+    btn.style.opacity = '0.6';
+
+    setTimeout(() => {
+      render();
+      btn.textContent = 'Автоматтар тізімін жаңарту';
+      btn.style.opacity = '1';
+    }, 1000);
+  }
+
+  render();
+</script>
+
+<script src="/static/tracker.js"></script>
+</body>
+</html>
