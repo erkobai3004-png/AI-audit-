@@ -1,12 +1,23 @@
-from flask import Flask, render_template, request, jsonify, redirect, session
+from flask import Flask, render_template, request, jsonify, redirect, session, send_file
 from datetime import datetime
 import csv, os
 from user_agents import parse
-from flask import Flask, render_template, request, jsonify, redirect, session,send_file
-from datetime import datetime
-import csv, os
 from collections import defaultdict, deque
 import pandas as pd
+from google import genai
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer
+)
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+
+from io import BytesIO
+
+from flask import send_file
 app = Flask(__name__)
 app.secret_key = "secret123"
 
@@ -89,11 +100,27 @@ def oprosnik():
 
 
 # 🛡 ADMIN PANEL
+# 🛡 ADMIN PANEL
 @app.route("/admin")
 def admin():
     if not session.get("admin_logged_in"):
         return redirect("/admin/login")
+
     return render_template("admin.html")
+@app.route("/admin/analytics")
+def analytics():
+
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    return render_template("analytics.html")
+@app.route("/admin/ai")
+def ai_insights():
+
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    return render_template("ai_insights.html")
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
@@ -115,6 +142,8 @@ def admin_logout():
     return redirect("/admin/login")
 @app.route("/admin/data")
 def admin_data():
+    site_filter = request.args.get("site")
+    event_filter = request.args.get("event")
     stats = {
         "visits": 0,
         "clicks": 0,
@@ -136,6 +165,11 @@ def admin_data():
         for row in reader:
             site = row.get("site", "unknown")
             event = row.get("event", "")
+            if site_filter and site != site_filter:
+                continue
+
+            if event_filter and event != event_filter:
+                continue
             device = row.get("device", "Unknown") or "Unknown"
             browser = row.get("browser", "Unknown") or "Unknown"
             os_name = row.get("os", "Unknown") or "Unknown"
@@ -185,7 +219,8 @@ def admin_data():
 # 📡 LIVE LOG STREAM API
 @app.route("/admin/logs")
 def admin_logs():
-
+    site_filter = request.args.get("site")
+    event_filter = request.args.get("event")
     logs = deque(maxlen=20)
 
     if not os.path.exists(LOG_FILE):
@@ -198,7 +233,14 @@ def admin_logs():
         rows = list(reader)
 
         for row in reversed(rows[-20:]):
+            site = row.get("site", "")
+            event = row.get("event", "")
 
+            if site_filter and site != site_filter:
+                continue
+
+            if event_filter and event != event_filter:
+                continue
             logs.append({
                 "time": row.get("time", ""),
                 "site": row.get("site", "unknown"),
@@ -228,5 +270,389 @@ def export_excel():
         download_name="audit_export.xlsx"
     )
 # ▶️ Запуск
+@app.route("/admin/ai/analyze")
+def ai_analyze():
+
+        if not session.get("admin_logged_in"):
+            return jsonify({
+                "error": "Авторизация қажет"
+            }), 401
+
+        api_key = os.environ.get(
+            "GEMINI_API_KEY"
+        )
+
+        if not api_key:
+            return jsonify({
+                "error": "GEMINI_API_KEY табылмады"
+            }), 500
+
+        if not os.path.exists(LOG_FILE):
+            return jsonify({
+                "error": "Лог файлы табылмады"
+            }), 404
+
+        with open(
+                LOG_FILE,
+                "r",
+                encoding="utf-8"
+        ) as f:
+
+            logs_text = f.read()
+
+        prompt = f"""
+    Сен кәсіби киберқауіпсіздік аудиторы және SOC аналитигісің.
+    Сенің міндетің — Social Engineering Audit Tool логтары негізінде толық, терең, коммерциялық аудит есебін дайындау.
+
+    Маңызды:
+    - Жауап тек қазақ тілінде болсын.
+    - Жауап қысқа болмасын.
+    - Әр бөлім толық, нақты, ақпаратқа бай болсын.
+    - Ұсыныстар көп және практикалық болсын.
+    - Компания сатып алатын аудит есебі сияқты professional форматта жаз.
+    - Тек жалпы сөздер жазба, логтардағы нақты әрекеттерге сүйен.
+    - Нақты логин/пароль талданбайды және сақталмайды.
+    - Бұл тек этикалық аудит және awareness testing.
+
+    Сценарийлер:
+
+    1) microsoft365
+    - OSINT арқылы нақты адамға бағытталған spear phishing сценарийі.
+    - Арна: электрондық пошта.
+    - Аудитория: 1 нақты адам.
+    - Триггер: шұғылдық / қорқыныш.
+    - Қауіп: корпоративтік аккаунтқа сену, жалған Microsoft365 бетіне кіру, credential submission risk.
+
+    2) oprosnik
+    - AI voice cloning арқылы voice phishing simulation.
+    - Арна: WhatsApp дауыстық хабарлама.
+    - Аудитория: 5 адам.
+    - Триггер: сенім / көмек / қызығушылық.
+    - Қауіп: таныс дауысқа сену, emotional manipulation, urgency-based help request.
+
+    3) avtomaty
+    - Пайда мен қызығушылыққа негізделген baiting сценарийі.
+    - Арна: WhatsApp студенттік топ.
+    - Аудитория: топтық аудитория.
+    - Триггер: пайда / қызығушылық.
+    - Қауіп: топтық ортада сілтемеге тез басу, reward-based manipulation.
+
+    Логтардағы event мағынасы:
+    - visit — пайдаланушы сайтқа кірді
+    - click — пайдаланушы батырма немесе әрекет элементін басты
+    - leave — пайдаланушы сайттан шықты
+    - login_attempt — пайдаланушы формаға дерек енгізуге дейін барды
+    - time_spent — бетте өткізген уақыт
+    - device/browser/os — техникалық орта
+
+    Міндетті түрде мына форматпен жаз:
+
+    # 1. Executive Summary
+    Жалпы аудит нәтижесін толық түсіндір.
+    Қандай қауіп байқалды, қандай сценарий әсерлі болды, қандай оң нәтиже бар.
+
+    # 2. Жалпы статистикалық талдау
+    Логтардан:
+    - жалпы visit саны
+    - жалпы click саны
+    - login_attempt саны
+    - leave саны
+    - орташа time_spent
+    - құрылғы/browser/os туралы қорытынды
+    шығарып жаз.
+
+    # 3. Әр сценарий бойынша жеке талдау
+    Әр сценарийді бөлек талда:
+
+    ## microsoft365
+    - Нысаналы spear phishing неге қауіпті
+    - OSINT қолдану қаупі
+    - Email арқылы жіберудің әсері
+    - Шұғылдық/қорқыныш trigger әсері
+    - Логтар бойынша пайдаланушы әрекеті
+    - Risk level
+
+    ## oprosnik
+    - Voice phishing қаупі
+    - AI voice cloning арқылы сенімге әсер ету
+    - WhatsApp арнасының ерекшелігі
+    - Көмек/сенім/қызығушылық trigger әсері
+    - Логтар бойынша әрекет
+    - Risk level
+
+    ## avtomaty
+    - Reward baiting қаупі
+    - WhatsApp group арқылы кең таралу қаупі
+    - Пайда/қызығушылық trigger әсері
+    - Логтар бойынша әрекет
+    - Risk level
+
+    # 4. Behavioral Analysis
+    Пайдаланушылардың мінез-құлқын талда:
+    - сілтемеге сену деңгейі
+    - күмәндану белгілері
+    - тез шыққан жағдайлар
+    - ұзақ отырған жағдайлар
+    - click жасағандар
+    - дерек енгізуге бармағандар
+    - қандай behavior қауіпті екенін жаз.
+
+    # 5. Psychological Trigger Analysis
+    Әр trigger-ді талда:
+    - Шұғылдық
+    - Қорқыныш
+    - Сенім
+    - Көмек сұрау
+    - Қызығушылық
+    - Пайда
+
+    Қайсысы көбірек әсер еткенін түсіндір.
+
+    # 6. Technical Risk Analysis
+    Техникалық тұрғыдан талда:
+    - phishing page interaction
+    - browser/device/os exposure
+    - IP logging
+    - session behavior
+    - endpoint visibility
+    - email/WhatsApp delivery risks
+    - MFA болмаса қандай қауіп болуы мүмкін
+
+    # 7. Risk Rating
+    Әр сценарийге risk бер:
+    - LOW / MEDIUM / HIGH
+    Неге солай екенін түсіндір.
+    Кесте түрінде жаз.
+
+    # 8. Нақты ұсыныстар
+    Кемінде 15 ұсыныс бер.
+    Ұсыныстарды мына топтарға бөл:
+    - Қызметкерлерді оқыту
+    - Email security
+    - WhatsApp / messenger қауіпсіздігі
+    - MFA және access control
+    - OSINT exposure reduction
+    - Incident response
+    - Policy and governance
+    - Technical monitoring
+
+    # 9. Қысқа мерзімді іс-шаралар
+    Алдағы 7 күнде не істеу керек.
+
+    # 10. Орта мерзімді іс-шаралар
+    Алдағы 1 айда не істеу керек.
+
+    # 11. Ұзақ мерзімді стратегия
+    3–6 айда қандай security awareness program құру керек.
+
+    # 12. Қорытынды
+    Толық, кәсіби қорытынды жаз.
+
+    Жауапта markdown қолдан.
+    Бөлімдер анық болсын.
+    Кесте қолдануға болады.
+    Жауап кемінде 1200–1800 сөз болсын.
+
+    Логтар:
+{logs_text[-12000:]}
+
+"""
+
+        try:
+
+            client = genai.Client(
+                api_key=api_key
+            )
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+
+            return jsonify({
+                "answer": response.text
+            })
+
+        except Exception as e:
+
+            return jsonify({
+                "error": str(e)
+            }), 500
+@app.route("/admin/ai/chat", methods=["POST"])
+def ai_chat():
+
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Авторизация қажет"}), 401
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+
+    if not api_key:
+        return jsonify({"error": "GEMINI_API_KEY табылмады"}), 500
+
+    user_message = request.json.get("message", "")
+
+    if not user_message:
+        return jsonify({"error": "Сұрақ бос."}), 400
+
+    with open(LOG_FILE, "r", encoding="utf-8") as f:
+        logs_text = f.read()
+
+    prompt = f"""
+Сен киберқауіпсіздік аудитінің AI аналитигісің.
+Төмендегі аудит логтарына сүйеніп, пайдаланушының сұрағына қазақ тілінде жауап бер.
+
+Сценарийлер:
+1) microsoft365 — OSINT негізіндегі targeted spear phishing, Email, шұғылдық/қорқыныш.
+2) oprosnik — AI voice phishing simulation, WhatsApp voice, сенім/көмек/қызығушылық.
+3) avtomaty — reward-based baiting, WhatsApp group, пайда/қызығушылық.
+
+Логтар:
+{logs_text[-12000:]}
+
+Пайдаланушы сұрағы:
+{user_message}
+"""
+
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        return jsonify({"answer": response.text})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+@app.route("/export/pdf")
+def export_pdf():
+
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4
+    )
+
+    pdfmetrics.registerFont(
+        TTFont(
+            'DejaVu',
+            'fonts/DejaVuSans.ttf'
+        )
+    )
+
+    styles = getSampleStyleSheet()
+    styles['BodyText'].fontName = 'DejaVu'
+    styles['Title'].fontName = 'DejaVu'
+    styles['Heading2'].fontName = 'DejaVu'
+
+    elements = []
+
+    title = Paragraph(
+        "Social Engineering Audit Report",
+        styles['Title']
+    )
+
+    elements.append(title)
+    elements.append(Spacer(1, 20))
+
+    intro = Paragraph(
+        """
+        Бұл есеп әлеуметтік инженерия аудиті
+        нәтижелері негізінде автоматты түрде
+        жасалған.<br/><br/>
+
+        Жүйе:<br/>
+        - phishing simulation<br/>
+        - behavioral analysis<br/>
+        - AI-driven security analytics<br/>
+        қолданады.
+        """,
+        styles['BodyText']
+    )
+
+    elements.append(intro)
+    elements.append(Spacer(1, 20))
+
+    stats = Paragraph(
+        """
+        <b>Жалпы статистика:</b><br/><br/>
+
+        Visits: 12<br/>
+        Clicks: 5<br/>
+        Login Attempts: 1<br/>
+        Average Time: 24 sec<br/>
+        Risk Level: MEDIUM
+        """,
+        styles['BodyText']
+    )
+
+    elements.append(stats)
+    elements.append(Spacer(1, 20))
+
+    try:
+        api_key = os.environ.get("GEMINI_API_KEY")
+
+        if not api_key:
+            raise Exception("GEMINI_API_KEY табылмады")
+
+        client = genai.Client(api_key=api_key)
+
+        with open(LOG_FILE, "r", encoding="utf-8") as f:
+            logs_text = f.read()
+
+        ai_prompt = f"""
+Төмендегі аудит логтарына қысқаша professional
+security conclusion жаса.
+
+1. Жалпы қорытынды
+2. Ең қауіпті сценарий
+3. Ұсыныстар
+
+Қазақ тілінде жаз.
+
+Логтар:
+{logs_text[-6000:]}
+"""
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=ai_prompt
+        )
+
+        ai_text = response.text
+
+    except Exception as e:
+        ai_text = f"AI analysis error: {str(e)}"
+
+    ai_title = Paragraph(
+        "AI Security Analysis",
+        styles['Heading2']
+    )
+
+    elements.append(ai_title)
+    elements.append(Spacer(1, 12))
+
+    ai_paragraph = Paragraph(
+        ai_text.replace("\n", "<br/>"),
+        styles['BodyText']
+    )
+
+    elements.append(ai_paragraph)
+    elements.append(Spacer(1, 20))
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="audit_report.pdf",
+        mimetype="application/pdf"
+    )
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)

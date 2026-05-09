@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Insights</title>
+
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="logo">🛡️ Audit AI</div>
+
+        <nav>
+            <a href="/admin">📊 Жүйеге шолу</a>
+            <a href="/admin/analytics">📈 Analytics</a>
+            <a class="active" href="/admin/ai">🧠 AI Insights</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="robot">🤖</div>
+            <p>Social Engineering<br>Audit Tool</p>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <header class="topbar">
+
+    <div>
+        <h1>🧠 AI Audit Assistant</h1>
+
+        <p>
+            Audit logs негізіндегі
+            AI security analyst
+        </p>
+    </div>
+
+    <div class="actions">
+
+        <button
+            type="button"
+            onclick="runAIAnalysis()"
+        >
+            Толық аудит анализі
+        </button>
+
+    </div>
+
+</header>
+
+
+<section class="panel ai-chat-panel">
+
+    <div id="chatBox" class="chat-box">
+
+        <div class="ai-message">
+
+            Сәлем. Мен audit logs негізінде
+            қауіпсіздік анализін жасай аламын.
+
+            Алдымен:
+            "Толық аудит анализі"
+            батырмасын басыңыз.
+
+        </div>
+
+    </div>
+
+    <div class="chat-input-area">
+
+        <input
+            type="text"
+            id="chatInput"
+            placeholder="Сұрақ жазыңыз..."
+        >
+
+        <button onclick="sendMessage()">
+            Жіберу
+        </button>
+
+    </div>
+
+</section>
+        <section class="panel ai-followup-panel">
+
+    <div class="followup-header">
+
+        <h2>💬 Audit AI Chat</h2>
+
+        <p>
+            Аудит бойынша қосымша сұрақтар қойыңыз
+        </p>
+
+    </div>
+
+    <div id="chatMessages" class="chat-messages">
+
+    </div>
+
+    <div class="chat-input-wrapper">
+
+        <input
+            type="text"
+            id="chatInput"
+            placeholder="Сұрақ жазыңыз..."
+        >
+
+        <button onclick="sendAuditQuestion()">
+            Жіберу
+        </button>
+
+    </div>
+
+</section>
+        <script>
+
+function appendChatMessage(text, type) {
+
+    const chat =
+        document.getElementById(
+            "chatMessages"
+        );
+
+    const div =
+        document.createElement("div");
+
+    div.className =
+        type === "user"
+        ? "chat-user"
+        : "chat-ai";
+
+    div.innerText = text;
+
+    chat.appendChild(div);
+
+    chat.scrollTop =
+        chat.scrollHeight;
+}
+
+
+function sendAuditQuestion() {
+
+    const input =
+        document.getElementById(
+            "chatInput"
+        );
+
+    const message =
+        input.value.trim();
+
+    if (!message) return;
+
+    appendChatMessage(
+        message,
+        "user"
+    );
+
+    input.value = "";
+
+    fetch("/admin/ai/chat", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type":
+                "application/json"
+        },
+
+        body: JSON.stringify({
+            message: message
+        })
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        appendChatMessage(
+            data.answer || data.error,
+            "ai"
+        );
+
+    })
+
+    .catch(error => {
+
+        appendChatMessage(
+            "AI chat error",
+            "ai"
+        );
+
+        console.error(error);
+    });
+}
+
+</script>
+
+    </main>
+
+</div>
+
+<script>
+function runAIAnalysis() {
+    const box = document.getElementById("aiAnswer");
+
+    box.innerText = "AI логтарды талдап жатыр...";
+
+    fetch("/admin/ai/analyze", { cache: "no-store" })
+        .then(response => response.json())
+        .then(data => {
+            box.innerText = data.answer || data.error || "Жауап алынбады.";
+        })
+        .catch(error => {
+            console.error(error);
+            box.innerText = "AI талдау кезінде қате шықты. Console тексеріңіз.";
+        });
+}
+</script>
+
+</body>
+</html>
+<script>
+
+function addMessage(text, type) {
+
+    const chatBox =
+        document.getElementById("chatBox");
+
+    const div =
+        document.createElement("div");
+
+    div.className =
+        type === "user"
+        ? "user-message"
+        : "ai-message";
+
+    div.innerText = text;
+
+    chatBox.appendChild(div);
+
+    chatBox.scrollTop =
+        chatBox.scrollHeight;
+}
+
+
+function runAIAnalysis() {
+
+    addMessage(
+        "AI аудит логтарын талдап жатыр...",
+        "ai"
+    );
+
+    fetch("/admin/ai/analyze")
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        addMessage(
+            data.answer || data.error,
+            "ai"
+        );
+
+    })
+
+    .catch(error => {
+
+        addMessage(
+            "AI analysis error",
+            "ai"
+        );
+
+        console.error(error);
+    });
+}
+
+
+function sendMessage() {
+
+    const input =
+        document.getElementById("chatInput");
+
+    const message =
+        input.value.trim();
+
+    if (!message) return;
+
+    addMessage(message, "user");
+
+    input.value = "";
+
+    fetch("/admin/ai/chat", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type":
+                "application/json"
+        },
+
+        body: JSON.stringify({
+            message: message
+        })
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        addMessage(
+            data.answer || data.error,
+            "ai"
+        );
+
+    })
+
+    .catch(error => {
+
+        addMessage(
+            "AI chat error",
+            "ai"
+        );
+
+        console.error(error);
+    });
+}
+
+</script>

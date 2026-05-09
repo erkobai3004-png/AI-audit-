@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>Analytics</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='admin.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            🛡️ Audit AI
+        </div>
+
+        <nav>
+            <a href="/admin">
+                📊 Жүйеге шолу
+            </a>
+
+            <a class="active">
+                📈 Analytics
+            </a>
+
+            <a>
+                🧠 AI Insights
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="robot">🤖</div>
+
+            <p>
+                Social Engineering<br>
+                Audit Tool
+            </p>
+        </div>
+
+    </aside>
+
+    <main class="main">
+
+        <section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+            <h2>📊 Comparative Funnel</h2>
+
+            <p>
+                Әлеуметтік инженерия сценарийлерінің
+                әрекет кезеңдері бойынша салыстырмасы
+            </p>
+        </div>
+<section class="panel">
+
+    <div class="panel-header">
+        <div>
+            <h2>🧠 Psychological Trigger Analysis</h2>
+            <p>
+                Әр сценарийде қолданылған әлеуметтік инженерия әдісі мен
+                психологиялық әсер ету факторларын талдау
+            </p>
+        </div>
+    </div>
+
+    <div class="trigger-grid">
+
+        <div class="trigger-card">
+            <h3>🔐 Microsoft365</h3>
+            <p><b>Әдіс:</b> OSINT негізіндегі targeted spear phishing</p>
+            <p><b>Арна:</b> Email</p>
+            <p><b>Аудитория:</b> 1 нақты адам</p>
+            <p><b>Триггер:</b> Шұғылдық / Қорқыныш</p>
+            <div class="trigger-badge danger">High credential risk</div>
+        </div>
+
+        <div class="trigger-card">
+            <h3>📋 Oprosnik</h3>
+            <p><b>Әдіс:</b> AI voice phishing simulation</p>
+            <p><b>Арна:</b> WhatsApp voice message</p>
+            <p><b>Аудитория:</b> 5 адам</p>
+            <p><b>Триггер:</b> Сенім / Көмек / Қызығушылық</p>
+            <div class="trigger-badge warning">High trust reaction</div>
+        </div>
+
+        <div class="trigger-card">
+            <h3>📁 Avtomaty</h3>
+            <p><b>Әдіс:</b> Reward-based baiting</p>
+            <p><b>Арна:</b> WhatsApp student group</p>
+            <p><b>Аудитория:</b> Топтық аудитория</p>
+            <p><b>Триггер:</b> Пайда / Қызығушылық</p>
+            <div class="trigger-badge success">High reach potential</div>
+        </div>
+
+    </div>
+
+</section>
+        <section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>📈 Advanced Security Metrics</h2>
+
+            <p>
+                Қолданушылардың әрекет үлгілерін
+                терең талдау көрсеткіштері
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="metrics-grid">
+
+        <div class="metric-card">
+
+            <div class="metric-icon">
+                ⏱️
+            </div>
+
+            <div class="metric-info">
+
+                <h3>
+                    Mean Interaction Time
+                </h3>
+
+                <span id="avgInteraction">
+                    0 sec
+                </span>
+
+                <p>
+                    Пайдаланушылардың
+                    орташа әрекет уақыты
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="metric-card">
+
+            <div class="metric-icon">
+                🎯
+            </div>
+
+            <div class="metric-info">
+
+                <h3>
+                    Click-to-Submission Ratio
+                </h3>
+
+                <span id="submissionRatio">
+                    0%
+                </span>
+
+                <p>
+                    Click жасағандардың
+                    login әрекетіне өтуі
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="metric-card">
+
+            <div class="metric-icon">
+                🚪
+            </div>
+
+            <div class="metric-info">
+
+                <h3>
+                    Bounce Rate
+                </h3>
+
+                <span id="bounceRate">
+                    0%
+                </span>
+
+                <p>
+                    Еш әрекет жасамай
+                    шығып кеткендер
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+        <section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                🧩 Scenario Comparison Matrix
+            </h2>
+
+            <p>
+                Әлеуметтік инженерия сценарийлерін
+                техникалық және психологиялық
+                тұрғыдан салыстыру
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="matrix-wrapper">
+
+        <table class="matrix-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>Scenario</th>
+                    <th>Delivery</th>
+                    <th>Trigger</th>
+                    <th>Audience</th>
+                    <th>Risk</th>
+                    <th>Engagement</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr>
+
+                    <td>
+                        🔐 Microsoft365
+                    </td>
+
+                    <td>
+                        Email
+                    </td>
+
+                    <td>
+                        Urgency / Fear
+                    </td>
+
+                    <td>
+                        1 Target
+                    </td>
+
+                    <td>
+                        <span class="risk high">
+                            HIGH
+                        </span>
+                    </td>
+
+                    <td>
+                        Credential Submission
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>
+                        📋 Oprosnik
+                    </td>
+
+                    <td>
+                        WhatsApp Voice
+                    </td>
+
+                    <td>
+                        Trust / Help
+                    </td>
+
+                    <td>
+                        5 Users
+                    </td>
+
+                    <td>
+                        <span class="risk medium">
+                            MEDIUM
+                        </span>
+                    </td>
+
+                    <td>
+                        Emotional Response
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>
+                        📁 Avtomaty
+                    </td>
+
+                    <td>
+                        WhatsApp Group
+                    </td>
+
+                    <td>
+                        Benefit / Curiosity
+                    </td>
+
+                    <td>
+                        Group Audience
+                    </td>
+
+                    <td>
+                        <span class="risk medium">
+                            MEDIUM
+                        </span>
+                    </td>
+
+                    <td>
+                        Rapid Click Behavior
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="funnelChart"></canvas>
+    </div>
+
+</section>
+
+    </main>
+
+</div>
+
+<script>
+fetch("/admin/data")
+
+.then(response => response.json())
+
+.then(data => {
+
+    const labels = [];
+
+    const visitsData = [];
+    const clicksData = [];
+    const loginsData = [];
+
+    for (const site in data.scenarios) {
+
+        const row = data.scenarios[site];
+
+        labels.push(site);
+
+        visitsData.push(row.visits);
+        clicksData.push(row.clicks);
+        loginsData.push(row.logins);
+    }
+
+    new Chart(
+        document.getElementById("funnelChart"),
+        {
+
+            type: "bar",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+                        label: "Visits",
+
+                        data: visitsData,
+
+                        backgroundColor:
+                            "rgba(59,130,246,0.8)",
+
+                        borderRadius: 8
+                    },
+
+                    {
+                        label: "Clicks",
+
+                        data: clicksData,
+
+                        backgroundColor:
+                            "rgba(245,158,11,0.8)",
+
+                        borderRadius: 8
+                    },
+
+                    {
+                        label: "Login Attempts",
+
+                        data: loginsData,
+
+                        backgroundColor:
+                            "rgba(239,68,68,0.8)",
+
+                        borderRadius: 8
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+                        labels: {
+                            color: "#cbd5e1"
+                        }
+                    }
+
+                },
+
+                scales: {
+
+                    x: {
+
+                        ticks: {
+                            color: "#94a3b8"
+                        },
+
+                        grid: {
+                            color: "#1e293b"
+                        }
+
+                    },
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        ticks: {
+                            color: "#94a3b8"
+                        },
+
+                        grid: {
+                            color: "#1e293b"
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
+
+});
+
+
+</script>
+
+</body>
+</html>

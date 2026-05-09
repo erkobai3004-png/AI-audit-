@@ -15,10 +15,14 @@
         <div class="logo">🛡️ Audit AI</div>
 
         <nav>
-    <a href="/admin">📊 Жүйеге шолу</a>
-    <a href="/admin/analytics">📈 Analytics</a>
-    <a href="/admin/ai">🧠 AI Insights</a>
-</nav>
+            <a class="active">📊 Жүйеге шолу</a>
+            <a>🔐 Microsoft 365</a>
+            <a>📋 Surveys</a>
+            <a>📁 Corporate Docs</a>
+            <a>🧠 Audit Insights</a>
+            <a>📡 Live Monitor</a>
+            <a>⚙️ Баптаулар</a>
+        </nav>
 
         <div class="sidebar-footer">
             <div class="robot">🤖</div>
@@ -30,61 +34,18 @@
 
         <header class="topbar">
             <div>
-                <h1>Киберқауіпсіздік аудит панелі</h1>
-                <p>Пайдаланушылардың күмәнді сілтемелерге реакциясын талдау</p>
+                <h1>Microsoft365 Audit</h1>
+                <p>Microsoft365 phishing scenario analytics</p>
             </div>
 
             <div class="actions">
-                <a href="/export/pdf">
-                    <button>Export PDF</button>
-</a>
+                <button type="button">Export PDF</button>
                 <button type="button" onclick="window.location.href='/export/excel'">
     Export Excel
 </button>
                 <span class="live">LIVE</span>
             </div>
         </header>
-<section class="panel" style="margin-bottom:20px;">
-
-    <div style="
-        display:flex;
-        gap:15px;
-        align-items:center;
-        flex-wrap:wrap;
-    ">
-
-        <div>
-            <label>Scenario</label><br>
-
-            <select id="siteFilter">
-                <option value="">All</option>
-                <option value="microsoft365">Microsoft365</option>
-                <option value="oprosnik">Oprosnik</option>
-                <option value="avtomaty">Avtomaty</option>
-            </select>
-        </div>
-
-        <div>
-            <label>Event</label><br>
-
-            <select id="eventFilter">
-                <option value="">All</option>
-                <option value="visit">Visit</option>
-                <option value="click">Click</option>
-                <option value="login_attempt">Login Attempt</option>
-                <option value="leave">Leave</option>
-            </select>
-        </div>
-
-        <div style="margin-top:20px;">
-            <button type="button" onclick="applyFilters()">
-                Apply Filter
-            </button>
-        </div>
-
-    </div>
-
-</section>
         <section class="cards">
 
             <div class="card glow-blue">
@@ -242,10 +203,11 @@ function destroyCharts() {
 }
 
 function getFilters() {
-    const site = document.getElementById("siteFilter")?.value || "";
-    const event = document.getElementById("eventFilter")?.value || "";
 
-    return { site, event };
+    return {
+        site: "microsoft365",
+        event: ""
+    };
 }
 
 function setRiskLevel(data) {
