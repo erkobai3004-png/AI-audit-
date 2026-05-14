@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>DNS Manager</title>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="logo">🛡️ Audit AI</div>
+
+        <nav>
+            <a href="/admin">📊 Жүйеге шолу</a>
+            <a href="/admin/analytics">📈 Analytics</a>
+            <a href="/admin/ai">🧠 AI Insights</a>
+            <a class="active" href="/admin/dns">🌐 DNS Manager</a>
+        </nav>
+    </aside>
+
+    <main class="main">
+
+        <header class="topbar">
+            <div>
+                <h1>🌐 Cloudflare DNS Manager</h1>
+                <p>Поддомендерді админ панель арқылы басқару</p>
+            </div>
+        </header>
+
+        {% if message %}
+        <div class="card glow-green">
+            <h3>✅ Сәтті орындалды</h3>
+            <p>{{ message }}</p>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="card glow-red">
+            <h3>❌ Қате</h3>
+            <p>{{ error }}</p>
+        </div>
+        {% endif %}
+
+        <section class="card">
+            <h2>Жаңа поддомен қосу</h2>
+
+            <form method="POST">
+                <label>Subdomain name</label>
+                <input type="text" name="subdomain" placeholder="мысалы: test немесе microsoft365" required>
+
+                <p>
+                    Нәтиже:
+                    <b>subdomain.{{ base_domain }}</b> → {{ server_ip }}
+                </p>
+
+                <label>
+                    <input type="checkbox" name="proxied" checked>
+                    Cloudflare Proxy ON
+                </label>
+                <br><br>
+
+<label>Scenario</label>
+
+<select name="scenario">
+
+    <option value="8000">
+        Microsoft365 (8000)
+    </option>
+
+    <option value="8001">
+        Oprosnik (8001)
+    </option>
+
+    <option value="8002">
+        Avtomaty (8002)
+    </option>
+
+</select>
+
+                <br><br>
+
+                <button type="submit">Create Subdomain</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Қазіргі A record тізімі</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>IP</th>
+                        <th>Proxy</th>
+                        <th>Type</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.name }}</td>
+                        <td>
+    <form method="POST" action="/admin/dns/update/{{ record.id }}">
+        <input type="hidden" name="name" value="{{ record.name }}">
+        <input type="hidden" name="type" value="{{ record.type }}">
+
+        <input type="text" name="ip" value="{{ record.content }}" style="width:150px;">
+
+        <label>
+            <input type="checkbox" name="proxied" {% if record.proxied %}checked{% endif %}>
+            Proxy
+        </label>
+
+        <button type="submit">Update</button>
+    </form>
+</td>
+
+<td>{{ "ON" if record.proxied else "OFF" }}</td>
+<td>{{ record.type }}</td>
+                        <td>
+    <form method="POST"
+          action="/admin/dns/delete/{{ record.id }}"
+          onsubmit="return confirm('Delete {{ record.name }} ?')">
+
+        <button type="submit"
+                style="
+                    background:#ff4d6d;
+                    border:none;
+                    color:white;
+                    padding:8px 14px;
+                    border-radius:10px;
+                    cursor:pointer;
+                    font-weight:bold;
+                ">
+            🗑 DELETE
+        </button>
+
+    </form>
+</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>

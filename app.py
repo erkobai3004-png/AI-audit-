@@ -1,3 +1,4 @@
+import paramiko
 from flask import Flask, render_template, request, jsonify, redirect, session, send_file
 from datetime import datetime
 import csv, os
@@ -14,7 +15,11 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
+import os
+import requests
+from dotenv import load_dotenv
 
+load_dotenv()
 from io import BytesIO
 
 from flask import send_file
@@ -48,7 +53,220 @@ def get_ip():
         return forwarded.split(",")[0]
     return request.remote_addr
 
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN")
+CLOUDFLARE_ZONE_ID = os.getenv("CLOUDFLARE_ZONE_ID")
+SERVER_IP = os.getenv("SERVER_IP", "161.35.70.26")
+BASE_DOMAIN = os.getenv("BASE_DOMAIN", "uni-system.cc")
+VPS_HOST = os.getenv("VPS_HOST", "").strip()
+VPS_USER = os.getenv("VPS_USER", "").strip()
+VPS_PASSWORD = os.getenv("VPS_PASSWORD", "").strip()
 
+CF_HEADERS = {
+    "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+
+def cf_request(method, url, json=None):
+    if not CLOUDFLARE_API_TOKEN or not CLOUDFLARE_ZONE_ID:
+        return {
+            "success": False,
+            "errors": ["Cloudflare API Token немесе Zone ID .env ішінде жазылмаған."]
+        }
+
+    response = requests.request(
+        method,
+        url,
+        headers=CF_HEADERS,
+        json=json,
+        timeout=15
+    )
+
+    return response.json()
+
+
+
+@app.route("/admin/dns", methods=["GET", "POST"])
+def admin_dns():
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    message = None
+    error = None
+
+    if request.method == "POST":
+        subdomain = request.form.get("subdomain", "").strip().lower()
+        proxied = request.form.get("proxied") == "on"
+        scenario_port = request.form.get("scenario", "8000")
+        scenario_path = ""
+
+        scenario_path = ""
+
+        if scenario_port == "8000":
+            scenario_path = "/microsoft365"
+
+        elif scenario_port == "8001":
+            scenario_path = "/oprosnik"
+            scenario_port = "8000"
+
+        elif scenario_port == "8002":
+            scenario_path = "/avtomaty"
+            scenario_port = "8000"
+        if not subdomain:
+            error = "Subdomain бос болмауы керек."
+        elif "." in subdomain or "/" in subdomain or " " in subdomain:
+            error = "Тек subdomain атын жазыңыз. Мысалы: test немесе oprosnik"
+        else:
+            full_name = f"{subdomain}.{BASE_DOMAIN}"
+
+            url = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/dns_records"
+
+            payload = {
+                "type": "A",
+                "name": full_name,
+                "content": SERVER_IP,
+                "ttl": 1
+            }
+
+            if proxied:
+                payload["proxied"] = True
+            else:
+                payload["proxied"] = False
+
+            result = cf_request("POST", url, json=payload)
+
+            if result.get("success"):
+                os.makedirs("generated_nginx", exist_ok=True)
+
+                config_path = os.path.join("generated_nginx", f"{subdomain}.conf")
+
+                nginx_config = f"""
+            server {{
+                listen 80;
+                server_name {full_name};
+
+                location / {{
+                    proxy_pass http://127.0.0.1:{scenario_port}{scenario_path};
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                }}
+            }}
+            """
+
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(nginx_config)
+
+                deploy_ok, deploy_msg = deploy_nginx_config(
+                    config_path,
+                    f"{subdomain}.conf"
+                )
+
+                if deploy_ok:
+                    message = f"{full_name} DNS және nginx deploy жасалды."
+                else:
+                    error = f"DNS қосылды, бірақ nginx deploy қатесі: {deploy_msg}"
+
+            else:
+                error = str(result)
+    list_url = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/dns_records?type=A"
+    records_result = cf_request("GET", list_url)
+
+    records = []
+    if records_result.get("success"):
+        records = records_result.get("result", [])
+
+    return render_template(
+        "admin_dns.html",
+        records=records,
+        message=message,
+        error=error,
+        server_ip=SERVER_IP,
+        base_domain=BASE_DOMAIN
+    )
+
+@app.route("/admin/dns/delete/<record_id>", methods=["POST"])
+def delete_dns_record(record_id):
+
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    url = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/dns_records/{record_id}"
+
+    result = cf_request("DELETE", url)
+
+    return redirect("/admin/dns")
+@app.route("/admin/dns/update/<record_id>", methods=["POST"])
+def update_dns_record(record_id):
+
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+
+    name = request.form.get("name")
+    record_type = request.form.get("type", "A")
+    ip = request.form.get("ip", SERVER_IP)
+    proxied = request.form.get("proxied") == "on"
+    scenario_port = request.form.get("scenario", "8000")
+    url = f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/dns_records/{record_id}"
+
+    payload = {
+        "type": "A",
+        "name": full_name,
+        "content": SERVER_IP,
+        "ttl": 1
+    }
+
+    if proxied:
+        payload["proxied"] = True
+    else:
+        payload["proxied"] = False
+
+    result = cf_request("PATCH", url, json=payload)
+
+    return redirect("/admin/dns")
+def deploy_nginx_config(local_path, remote_name):
+    if not VPS_HOST or not VPS_USER or not VPS_PASSWORD:
+        return False, "VPS_HOST, VPS_USER немесе VPS_PASSWORD .env ішінде жоқ."
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        ssh.connect(
+            VPS_HOST,
+            username=VPS_USER,
+            password=VPS_PASSWORD,
+            timeout=15
+        )
+
+        sftp = ssh.open_sftp()
+        remote_temp = f"/root/generated_nginx/{remote_name}"
+        sftp.put(local_path, remote_temp)
+        sftp.close()
+
+        commands = [
+            f"cp {remote_temp} /etc/nginx/sites-available/{remote_name}",
+            f"ln -sf /etc/nginx/sites-available/{remote_name} /etc/nginx/sites-enabled/{remote_name}",
+            "nginx -t",
+            "systemctl reload nginx"
+        ]
+
+        output = ""
+
+        for cmd in commands:
+            stdin, stdout, stderr = ssh.exec_command(cmd)
+            out = stdout.read().decode()
+            err = stderr.read().decode()
+            output += f"\n$ {cmd}\n{out}\n{err}"
+
+            if cmd == "nginx -t" and "successful" not in err.lower():
+                return False, output
+
+        ssh.close()
+        return True, output
+
+    except Exception as e:
+        return False, str(e)
 # 📡 TRACKING API
 @app.route("/track", methods=["POST"])
 def track():
